@@ -23,4 +23,8 @@ export class ReservationService {
   remove(id: number) {
     return `This action removes a #${id} reservation`;
   }
+
+  checkIfTaken(id: number) {
+    return `This action checks if a #${id} reservation was made`;
+  }
 }
