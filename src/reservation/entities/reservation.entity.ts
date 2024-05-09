@@ -6,6 +6,7 @@ import {
     OneToMany,
     PrimaryGeneratedColumn,
   } from "typeorm";
+import { Status } from "./status.enum";
   
   @Entity()
   export class Reservation {
@@ -14,6 +15,9 @@ import {
     
     @Column()
     accommodationId: number;
+
+    @Column({ nullable: false })
+    guestId: number;
 
     @Column()
     startDate: Date;
@@ -25,7 +29,7 @@ import {
     guestNumber: number;
 
     @Column()
-    accepted: boolean;
+    status: Status;
   
   }
   

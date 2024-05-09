@@ -1,30 +1,137 @@
-import { Injectable } from '@nestjs/common';
-import { CreateReservationDto } from './dto/create-reservation.dto';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { ReservationDto } from './dto/reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
+import { Reservation } from './entities/reservation.entity';
+import { Between, Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Status } from './entities/status.enum';
 
 @Injectable()
 export class ReservationService {
-  create(createReservationDto: CreateReservationDto) {
-    return 'This action adds a new reservation';
+
+  constructor(
+    @InjectRepository(Reservation)
+    private readonly reservationRepository: Repository<Reservation>,
+  ) {}
+
+
+  async create(reservationDto: ReservationDto): Promise<Reservation> {
+    const reservation = this.reservationRepository.create(reservationDto);
+    return await this.reservationRepository.save(reservation);
   }
 
-  findAll() {
-    return `This action returns all reservation`;
+  async findAll(): Promise<Reservation[]> {
+    return await this.reservationRepository.find();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} reservation`;
+  async findOne(id: number): Promise<Reservation> {
+    const reservation = await this.reservationRepository.findOne({
+      where: {id}
+    });
+    if (!reservation) {
+      throw new NotFoundException(`Reservation with ID ${id} not found`);
+    }
+    return reservation;
   }
 
-  update(id: number, updateReservationDto: UpdateReservationDto) {
-    return `This action updates a #${id} reservation`;
+  async update(id: number, updatedReservation: Reservation): Promise<Reservation> {
+    const reservation = await this.findOne(id);
+    this.reservationRepository.merge(reservation, updatedReservation);
+    return await this.reservationRepository.save(reservation);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} reservation`;
+  async remove(id: number): Promise<void> {
+    const reservation = await this.findOne(id);
+    await this.reservationRepository.remove(reservation);
+
   }
 
-  checkIfTaken(id: number) {
-    return `This action checks if a #${id} reservation was made`;
+  async reserve(rDto: ReservationDto): Promise<String>{
+
+    console.log("Starting reservation: \n")
+    const startDate = new Date(rDto.startDate);
+    const endDate = new Date(rDto.endDate);
+    let list: Reservation[] = await this.findAll();
+
+    for (const reservation of list) {
+      if(reservation.status === Status.ACCEPTED){
+        const existingStartDate = new Date(reservation.startDate);
+        const existingEndDate = new Date(reservation.endDate);
+
+        if (
+            (startDate >= existingStartDate && startDate <= existingEndDate) ||
+            (endDate >= existingStartDate && endDate <= existingEndDate) ||
+            (startDate <= existingStartDate && endDate >= existingEndDate)
+        ) {
+            // There is an overlapping reservation
+            return "Cannot reserve, date is taken.";
+        }
+      }
   }
+
+    // Accepted reservations in that timeframe
+    // const reservations = await this.reservationRepository.find({ 
+    //   where: {
+    //     accommodationId: rDto.accommodationId,
+    //     startDate: Between(startDate, endDate),
+    //     endDate: Between(startDate, endDate),
+    //     status: Status.ACCEPTED,
+    //   },
+    // });
+    // console.log("Input DTO:", rDto);
+    // console.log("Converted Dates:", startDate, endDate);
+    // console.log("Retrieved Reservations:", reservations);
+
+    // if (reservations.length > 0){ // There are reservations in that time period
+    //   return "Cannot reserve, date is taken.";
+    // }
+    rDto.status = Status.PENDING;
+    this.create(rDto);
+    return "Successfully created reservation."
+  }
+
+  async cancelReservationPending(reservationId: number){
+    const reservation = await this.reservationRepository.findOne({
+      where: {
+        id: reservationId,
+        status: Status.PENDING,
+      },
+    });
+    console.log(reservation)
+    if (reservation){
+      this.remove(reservation.id);
+      return "Successfully canceled reservation."
+    }
+    return "Reservation with " +reservationId+ " doesn't exist."
+  }
+
+  async cancelReservationAccepted(rDto: ReservationDto){
+    const reservation = await this.reservationRepository.findOne({
+      where: {
+        accommodationId: rDto.accommodationId,
+        startDate: rDto.startDate,
+        endDate: rDto.endDate,
+        status: Status.ACCEPTED,
+      },
+    });
+    if (reservation){
+      this.remove(reservation.id);
+    }
+  }
+
+  async confirmReservation(rDto: ReservationDto){
+    const reservation = await this.reservationRepository.findOne({
+      where: {
+        accommodationId: rDto.accommodationId,
+        startDate: rDto.startDate,
+        endDate: rDto.endDate,
+        status: Status.PENDING,
+      },
+    });
+    if (reservation){
+      reservation.status = Status.ACCEPTED;
+      this.update(reservation.id, reservation);
+    }
+  }
+
 }
