@@ -1,15 +1,16 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { ReservationService } from './reservation.service';
-import { CreateReservationDto } from './dto/create-reservation.dto';
+import { ReservationDto } from './dto/reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
+import { Reservation } from './entities/reservation.entity';
 
 @Controller()
 export class ReservationController {
   constructor(private readonly reservationService: ReservationService) {}
 
   @MessagePattern('createReservation')
-  create(@Payload() createReservationDto: CreateReservationDto) {
+  create(@Payload() createReservationDto: ReservationDto) {
     return this.reservationService.create(createReservationDto);
   }
 
@@ -24,12 +25,25 @@ export class ReservationController {
   }
 
   @MessagePattern('updateReservation')
-  update(@Payload() updateReservationDto: UpdateReservationDto) {
-    return this.reservationService.update(updateReservationDto.id, updateReservationDto);
+  update(@Payload() updateReservation: Reservation) {
+    return this.reservationService.update(updateReservation.id, updateReservation);
   }
 
   @MessagePattern('removeReservation')
   remove(@Payload() id: number) {
     return this.reservationService.remove(id);
   }
+
+  @MessagePattern('reserve')
+  reserve(@Payload() rDto: ReservationDto): Promise<String> {
+    return this.reservationService.reserve(rDto);
+  }
+
+  @MessagePattern('cancelReservation')
+  cancelReservation(@Payload() payload: {reservationId: number}) {
+    console.log("Number:", payload.reservationId) // console.log("Number:", reservationId) Print is: 'Number: { reservationId: 12 }'
+    return this.reservationService.cancelReservationPending(payload.reservationId);
+  }
+
+
 }
