@@ -1,49 +1,53 @@
-import { Controller } from '@nestjs/common';
-import { MessagePattern, Payload } from '@nestjs/microservices';
-import { ReservationService } from './reservation.service';
-import { ReservationDto } from './dto/reservation.dto';
-import { UpdateReservationDto } from './dto/update-reservation.dto';
-import { Reservation } from './entities/reservation.entity';
+import { Controller } from "@nestjs/common";
+import { MessagePattern, Payload } from "@nestjs/microservices";
+import { ReservationService } from "./reservation.service";
+import { ReservationDto } from "./dto/reservation.dto";
+import { UpdateReservationDto } from "./dto/update-reservation.dto";
+import { Reservation } from "./entities/reservation.entity";
 
 @Controller()
 export class ReservationController {
   constructor(private readonly reservationService: ReservationService) {}
 
-  @MessagePattern('createReservation')
+  @MessagePattern("createReservation")
   create(@Payload() createReservationDto: ReservationDto) {
     return this.reservationService.create(createReservationDto);
   }
 
-  @MessagePattern('findAllReservation')
+  @MessagePattern("findAllReservation")
   findAll() {
     return this.reservationService.findAll();
   }
 
-  @MessagePattern('findOneReservation')
+  @MessagePattern("findOneReservation")
   findOne(@Payload() id: number) {
     return this.reservationService.findOne(id);
   }
 
-  @MessagePattern('updateReservation')
+  @MessagePattern("updateReservation")
   update(@Payload() updateReservation: Reservation) {
-    return this.reservationService.update(updateReservation.id, updateReservation);
+    return this.reservationService.update(
+      updateReservation.id,
+      updateReservation,
+    );
   }
 
-  @MessagePattern('removeReservation')
+  @MessagePattern("removeReservation")
   remove(@Payload() id: number) {
     return this.reservationService.remove(id);
   }
 
-  @MessagePattern('reserve')
-  reserve(@Payload() rDto: ReservationDto): Promise<String> {
-    return this.reservationService.reserve(rDto);
+  @MessagePattern("reserve")
+  reserve(@Payload() dto: ReservationDto): Promise<String> {
+    console.log(dto);
+    return this.reservationService.reserve(dto);
   }
 
-  @MessagePattern('cancelReservation')
-  cancelReservation(@Payload() payload: {reservationId: number}) {
-    console.log("Number:", payload.reservationId) // console.log("Number:", reservationId) Print is: 'Number: { reservationId: 12 }'
-    return this.reservationService.cancelReservationPending(payload.reservationId);
+  @MessagePattern("cancelReservation")
+  cancelReservation(@Payload() payload: { reservationId: number }) {
+    console.log("Number:", payload.reservationId); // console.log("Number:", reservationId) Print is: 'Number: { reservationId: 12 }'
+    return this.reservationService.cancelReservationPending(
+      payload.reservationId,
+    );
   }
-
-
 }
