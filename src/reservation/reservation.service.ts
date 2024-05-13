@@ -9,8 +9,8 @@ import { Status } from "./entities/status.enum";
 @Injectable()
 export class ReservationService {
   constructor(
-    @InjectRepository(Reservation) private readonly reservationRepository:
-      Repository<Reservation>,
+    @InjectRepository(Reservation)
+    private readonly reservationRepository: Repository<Reservation>,
   ) {}
 
   async create(reservationDto: ReservationDto): Promise<Reservation> {
@@ -89,7 +89,7 @@ export class ReservationService {
     //   return "Cannot reserve, date is taken.";
     // }
     // dto.status = Status.PENDING;
-    // this.create(dto);
+    // this.create(dto); !!!!!!!!!!!!!!!!
     return reservations;
     // return "Successfully created reservation.";
   }
@@ -137,7 +137,7 @@ export class ReservationService {
     }
 
     // Accepted reservations in that timeframe
-    // const reservations = await this.reservationRepository.find({ 
+    // const reservations = await this.reservationRepository.find({
     //   where: {
     //     accommodationId: rDto.accommodationId,
     //     startDate: Between(startDate, endDate),
@@ -154,7 +154,6 @@ export class ReservationService {
     // }
     rDto.status = Status.PENDING;
     this.create(rDto);
-    return "Successfully created reservation."
+    return "Successfully created reservation.";
   }
-
 }

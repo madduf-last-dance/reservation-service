@@ -1,15 +1,15 @@
-import { Controller } from '@nestjs/common';
-import { MessagePattern, Payload } from '@nestjs/microservices';
-import { ReservationService } from './reservation.service';
-import { ReservationDto } from './dto/reservation.dto';
-import { UpdateReservationDto } from './dto/update-reservation.dto';
-import { Reservation } from './entities/reservation.entity';
+import { Controller } from "@nestjs/common";
+import { MessagePattern, Payload } from "@nestjs/microservices";
+import { ReservationService } from "./reservation.service";
+import { ReservationDto } from "./dto/reservation.dto";
+import { UpdateReservationDto } from "./dto/update-reservation.dto";
+import { Reservation } from "./entities/reservation.entity";
 
 @Controller()
 export class ReservationController {
   constructor(private readonly reservationService: ReservationService) {}
 
-  @MessagePattern('createReservation')
+  @MessagePattern("createReservation")
   create(@Payload() createReservationDto: ReservationDto) {
     return this.reservationService.create(createReservationDto);
   }
@@ -24,9 +24,12 @@ export class ReservationController {
     return this.reservationService.findOne(id);
   }
 
-  @MessagePattern('updateReservation')
+  @MessagePattern("updateReservation")
   update(@Payload() updateReservation: Reservation) {
-    return this.reservationService.update(updateReservation.id, updateReservation);
+    return this.reservationService.update(
+      updateReservation.id,
+      updateReservation,
+    );
   }
 
   @MessagePattern("removeReservation")
@@ -34,16 +37,16 @@ export class ReservationController {
     return this.reservationService.remove(id);
   }
 
-  @MessagePattern('reserve')
+  @MessagePattern("reserve")
   reserve(@Payload() rDto: ReservationDto): Promise<String> {
     return this.reservationService.reserve(rDto);
   }
 
-  @MessagePattern('cancelReservation')
-  cancelReservation(@Payload() payload: {reservationId: number}) {
-    console.log("Number:", payload.reservationId) // console.log("Number:", reservationId) Print is: 'Number: { reservationId: 12 }'
-    return this.reservationService.cancelReservationPending(payload.reservationId);
+  @MessagePattern("cancelReservation")
+  cancelReservation(@Payload() payload: { reservationId: number }) {
+    console.log("Number:", payload.reservationId); // console.log("Number:", reservationId) Print is: 'Number: { reservationId: 12 }'
+    return this.reservationService.cancelReservationPending(
+      payload.reservationId,
+    );
   }
-
-
 }

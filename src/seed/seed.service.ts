@@ -7,13 +7,14 @@ import { Repository } from "typeorm";
 @Injectable()
 export class SeedService {
   constructor(
-    @InjectRepository(Reservation) private readonly reservationRepository:
-      Repository<Reservation>,
+    @InjectRepository(Reservation)
+    private readonly reservationRepository: Repository<Reservation>,
   ) {}
 
   async seed() {
     const checkedReservations = await this.reservationRepository.find();
-    if (checkedReservations) {
+    console.log(checkedReservations);
+    if (checkedReservations.length !== 0) {
       return;
     }
     console.log("reservations");
