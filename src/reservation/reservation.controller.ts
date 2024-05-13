@@ -14,12 +14,12 @@ export class ReservationController {
     return this.reservationService.create(createReservationDto);
   }
 
-  @MessagePattern('findAllReservation')
+  @MessagePattern("findAllReservation")
   findAll() {
     return this.reservationService.findAll();
   }
 
-  @MessagePattern('findOneReservation')
+  @MessagePattern("findOneReservation")
   findOne(@Payload() id: number) {
     return this.reservationService.findOne(id);
   }
@@ -29,7 +29,7 @@ export class ReservationController {
     return this.reservationService.update(updateReservation.id, updateReservation);
   }
 
-  @MessagePattern('removeReservation')
+  @MessagePattern("removeReservation")
   remove(@Payload() id: number) {
     return this.reservationService.remove(id);
   }
