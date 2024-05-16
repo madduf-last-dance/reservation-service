@@ -13,11 +13,11 @@ export class SeedService {
 
   async seed() {
     const checkedReservations = await this.reservationRepository.find();
-    console.log(checkedReservations);
+    //console.log(checkedReservations);
     if (checkedReservations.length !== 0) {
       return;
     }
-    console.log("reservations");
+    //console.log("reservations");
 
     const reservations: Partial<Reservation>[] = [
       {

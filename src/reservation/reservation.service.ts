@@ -1,16 +1,19 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { ReservationDto } from "./dto/reservation.dto";
 import { UpdateReservationDto } from "./dto/update-reservation.dto";
 import { Reservation } from "./entities/reservation.entity";
 import { Between, LessThan, MoreThan, Repository } from "typeorm";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Status } from "./entities/status.enum";
+import { ClientProxy } from "@nestjs/microservices";
 
 @Injectable()
 export class ReservationService {
   constructor(
     @InjectRepository(Reservation)
     private readonly reservationRepository: Repository<Reservation>,
+    @Inject("ACCOMMODATION_SERVICE")
+    private readonly accommodationClient: ClientProxy,
   ) {}
 
   async create(reservationDto: ReservationDto): Promise<Reservation> {
@@ -54,44 +57,27 @@ export class ReservationService {
         status: Status.ACCEPTED,
       },
     });
-    // let list: Reservation[] = await this.findAll();
-    //
-    // for (const reservation of list) {
-    //   if (reservation.status === Status.ACCEPTED) {
-    //     const existingStartDate = new Date(reservation.startDate);
-    //     const existingEndDate = new Date(reservation.endDate);
-    //
-    //     if (
-    //       (startDate >= existingStartDate && startDate <= existingEndDate) ||
-    //       (endDate >= existingStartDate && endDate <= existingEndDate) ||
-    //       (startDate <= existingStartDate && endDate >= existingEndDate)
-    //     ) {
-    //       // There is an overlapping reservation
-    //       return "Cannot reserve, date is taken.";
-    //     }
-    //   }
-    // }
-    //
-    // Accepted reservations in that timeframe
-    // const reservations = await this.reservationRepository.find({
-    //   where: {
-    //     accommodationId: rDto.accommodationId,
-    //     startDate: Between(startDate, endDate),
-    //     endDate: Between(startDate, endDate),
-    //     status: Status.ACCEPTED,
-    //   },
-    // });
-    // console.log("Input DTO:", rDto);
-    // console.log("Converted Dates:", startDate, endDate);
-    // console.log("Retrieved Reservations:", reservations);
+    //console.log(reservations)
+    if(reservations.length > 0){
+      return "Reservation failed there are reservations in that time period.";
+    }
+    const aDto = {
+      accommodationId: dto.accommodationId,
+      startDate: dto.startDate,
+      endDate: dto.endDate,
+    }
+    const bool = await this.accommodationClient.send<string>("checkAvailability", aDto).toPromise();
+    console.log(bool)
 
-    // if (reservations.length > 0){ // There are reservations in that time period
-    //   return "Cannot reserve, date is taken.";
-    // }
-    // dto.status = Status.PENDING;
-    // this.create(dto); !!!!!!!!!!!!!!!!
-    return reservations;
-    // return "Successfully created reservation.";
+    if(bool){
+      dto.status = Status.PENDING;
+      const reservation = this.create(dto); 
+      return reservation
+    }
+    else {
+      return "Reservation failed, accommodation is not avaliable at these dates.";
+    }
+      
   }
 
   async cancelReservationPending(reservationId: number) {
@@ -108,12 +94,10 @@ export class ReservationService {
     return "Reservation with " + reservationId + " doesn't exist.";
   }
 
-  async cancelReservationAccepted(rDto: ReservationDto) {
+  async cancelReservationAccepted(reservationId: number) {
     const reservation = await this.reservationRepository.findOne({
       where: {
-        accommodationId: rDto.accommodationId,
-        startDate: rDto.startDate,
-        endDate: rDto.endDate,
+        id: reservationId,
         status: Status.ACCEPTED,
       },
     });

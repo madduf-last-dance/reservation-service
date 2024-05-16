@@ -15,6 +15,13 @@ import { Reservation } from "./entities/reservation.entity";
           port: 1315,
         },
       },
+      {
+        name: "ACCOMMODATION_SERVICE",
+        transport: Transport.TCP,
+        options: {
+          port: 1312,
+        },
+      },
     ]),
     TypeOrmModule.forFeature([Reservation]),
   ],
