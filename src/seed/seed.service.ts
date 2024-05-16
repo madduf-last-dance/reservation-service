@@ -23,8 +23,8 @@ export class SeedService {
       {
         accommodationId: 1,
         status: Status.PENDING,
-        startDate: new Date(2023, 12, 12),
-        endDate: new Date(2023, 12, 19),
+        startDate: new Date(2023, 11, 12),
+        endDate: new Date(2023, 11, 19),
         guestId: 1,
         guestNumber: 3,
       },
@@ -39,8 +39,8 @@ export class SeedService {
       {
         accommodationId: 1,
         status: Status.ACCEPTED,
-        startDate: new Date(2024, 12, 14),
-        endDate: new Date(2024, 12, 25),
+        startDate: new Date(2024, 11, 20),
+        endDate: new Date(2024, 11, 25),
         guestId: 1,
         guestNumber: 6,
       },
