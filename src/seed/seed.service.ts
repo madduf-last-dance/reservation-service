@@ -36,6 +36,14 @@ export class SeedService {
         guestId: 1,
         guestNumber: 5,
       },
+      {
+        accommodationId: 1,
+        status: Status.ACCEPTED,
+        startDate: new Date(2024, 12, 14),
+        endDate: new Date(2024, 12, 25),
+        guestId: 1,
+        guestNumber: 6,
+      },
     ];
     await this.reservationRepository.save(reservations);
   }
