@@ -26,7 +26,7 @@ import { SeedModule } from "./seed/seed.module";
       database: process.env.DB_NAME,
       autoLoadEntities: true,
       synchronize: true,
-      logging: true,
+      logging: false,
     }),
     SeedModule,
   ],

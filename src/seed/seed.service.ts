@@ -7,23 +7,24 @@ import { Repository } from "typeorm";
 @Injectable()
 export class SeedService {
   constructor(
-    @InjectRepository(Reservation) private readonly reservationRepository:
-      Repository<Reservation>,
+    @InjectRepository(Reservation)
+    private readonly reservationRepository: Repository<Reservation>,
   ) {}
 
   async seed() {
     const checkedReservations = await this.reservationRepository.find();
-    if (checkedReservations) {
+    //console.log(checkedReservations);
+    if (checkedReservations.length !== 0) {
       return;
     }
-    console.log("reservations");
+    //console.log("reservations");
 
     const reservations: Partial<Reservation>[] = [
       {
         accommodationId: 1,
         status: Status.PENDING,
-        startDate: new Date(2023, 12, 12),
-        endDate: new Date(2023, 12, 19),
+        startDate: new Date(2023, 11, 12),
+        endDate: new Date(2023, 11, 19),
         guestId: 1,
         guestNumber: 3,
       },
@@ -34,6 +35,14 @@ export class SeedService {
         endDate: new Date(2024, 2, 12),
         guestId: 1,
         guestNumber: 5,
+      },
+      {
+        accommodationId: 1,
+        status: Status.ACCEPTED,
+        startDate: new Date(2024, 11, 20),
+        endDate: new Date(2024, 11, 25),
+        guestId: 1,
+        guestNumber: 6,
       },
     ];
     await this.reservationRepository.save(reservations);

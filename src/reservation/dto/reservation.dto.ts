@@ -1,17 +1,15 @@
 import { Status } from "../entities/status.enum";
 
 export class ReservationDto {
+  accommodationId: number;
 
-    accommodationId: number;
+  guestId: number;
 
-    guestId: number;
+  startDate: Date;
 
-    startDate: Date;
+  endDate: Date;
 
-    endDate: Date;
+  guestNumber: number;
 
-    guestNumber: number;
-
-    status: Status;
-
+  status: Status;
 }
