@@ -140,4 +140,15 @@ export class ReservationService {
     this.create(rDto);
     return "Successfully created reservation.";
   }
+  async hasFutureReservations(guestId: number) {
+    console.log(new Date());
+    const reservations = await this.reservationRepository.find({
+      where: {
+        guestId: guestId,
+        status: Status.ACCEPTED,
+        startDate: MoreThan(new Date()),
+      },
+    });
+    return reservations.length > 0;
+  }
 }
