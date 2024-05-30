@@ -59,3 +59,8 @@ export class ReservationController {
 }
 
 
+  @MessagePattern("hasFutureReservations")
+  hasFutureReservations(@Payload() guestId: number) {
+    return this.reservationService.hasFutureReservations(guestId);
+  }
+}
