@@ -6,6 +6,7 @@ import { Between, LessThan, MoreThan, Repository } from "typeorm";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Status } from "./entities/status.enum";
 import { ClientProxy } from "@nestjs/microservices";
+import { lastValueFrom } from "rxjs";
 
 @Injectable()
 export class ReservationService {
@@ -58,26 +59,26 @@ export class ReservationService {
       },
     });
     //console.log(reservations)
-    if(reservations.length > 0){
+    if (reservations.length > 0) {
       return "Reservation failed there are reservations in that time period.";
     }
     const aDto = {
       accommodationId: dto.accommodationId,
       startDate: dto.startDate,
       endDate: dto.endDate,
-    }
-    const bool = await this.accommodationClient.send<string>("checkAvailability", aDto).toPromise();
-    console.log(bool)
+    };
+    const bool = await this.accommodationClient
+      .send<string>("checkAvailability", aDto)
+      .toPromise();
+    console.log(bool);
 
-    if(bool){
+    if (bool) {
       dto.status = Status.PENDING;
-      const reservation = this.create(dto); 
-      return reservation
-    }
-    else {
+      const reservation = this.create(dto);
+      return reservation;
+    } else {
       return "Reservation failed, accommodation is not avaliable at these dates.";
     }
-      
   }
 
   async cancelReservationPending(reservationId: number) {
@@ -141,7 +142,6 @@ export class ReservationService {
     return "Successfully created reservation.";
   }
   async hasFutureReservations(guestId: number) {
-    console.log(new Date());
     const reservations = await this.reservationRepository.find({
       where: {
         guestId: guestId,
@@ -150,5 +150,24 @@ export class ReservationService {
       },
     });
     return reservations.length > 0;
+  }
+
+  async hasFutureReservationsHost(hostId: number) {
+    const accommodations = await lastValueFrom(
+      this.accommodationClient.send<any>("findAllAccommodationsHost", hostId),
+    );
+    for (const accommodation of accommodations) {
+      const reservations = await this.reservationRepository.find({
+        where: {
+          accommodationId: accommodation.id,
+          status: Status.ACCEPTED,
+          startDate: MoreThan(new Date()),
+        },
+      });
+      if (reservations.length > 0) {
+        return true;
+      }
+    }
+    return false;
   }
 }
