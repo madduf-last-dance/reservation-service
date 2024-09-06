@@ -1,0 +1,56 @@
+networks:
+  hotel-reservation-app-network:
+    external: true
+
+services:
+
+  postgres:
+    image: postgres
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "${DB_EXTERNAL_PORT}:5432"
+    networks:
+      - hotel-reservation-app-network
+    volumes:
+        - reservation-data:/var/lib/postgresql/data
+
+  # pgadmin:
+  #   image: dpage/pgadmin4
+  #   ports:
+  #     - "8082:80"
+  #   networks:
+  #     - hotel-reservation-app-network
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: pgadmin@gmail.com
+  #     PGADMIN_DEFAULT_PASSWORD: ${DB_PASSWORD}
+  #   volumes:
+  #     - reservation-dbadmin:/var/lib/pgadmin
+
+  reservation-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # Only will build development stage from our dockerfile
+      target: development
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    ports:
+      - "1315:1315"
+    networks:
+      - hotel-reservation-app-network
+    depends_on:
+      - postgres
+    env_file:
+      - .env
+    # Run a command against the development stage of the image
+    command: npm run start:dev
+  
+volumes:
+  reservation-data:
+  # reservation-dbadmin:

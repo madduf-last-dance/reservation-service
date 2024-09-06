@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { ReservationDto } from "./dto/reservation.dto";
 import { UpdateReservationDto } from "./dto/update-reservation.dto";
 import { Reservation } from "./entities/reservation.entity";
@@ -18,6 +18,18 @@ export class ReservationService {
   ) {}
 
   async create(reservationDto: ReservationDto): Promise<Reservation> {
+    reservationDto.status = Status.PENDING;
+    const isOk = this.checkReservation(reservationDto);
+    if(!isOk) {
+      return null;
+    }
+    const accommodation  =  await lastValueFrom(this.accommodationClient.send<any>("findOneAccommodation", reservationDto.accommodationId));
+    if(!accommodation) {
+      return null;
+    }
+    if(accommodation.isAutomatic) {
+      reservationDto.status = Status.ACCEPTED;
+    }
     const reservation = this.reservationRepository.create(reservationDto);
     return await this.reservationRepository.save(reservation);
   }
@@ -25,7 +37,17 @@ export class ReservationService {
   async findAll(): Promise<Reservation[]> {
     return await this.reservationRepository.find();
   }
+  async findAllByUser(id: number): Promise<Reservation[]> {
+    return await this.reservationRepository.find(
+        {where: {guestId: id}}
+      );
+  }
 
+  async findAllByAccommodation(id: number): Promise<Reservation[]> {
+    return await this.reservationRepository.find(
+        {where: {accommodationId: id}}
+      );
+  }
   async findOne(id: number): Promise<Reservation> {
     const reservation = await this.reservationRepository.findOne({
       where: { id },
@@ -50,35 +72,9 @@ export class ReservationService {
   }
 
   async reserve(dto: ReservationDto): Promise<any> {
-    const reservations = await this.reservationRepository.find({
-      where: {
-        startDate: LessThan(dto.endDate),
-        endDate: MoreThan(dto.startDate),
-        accommodationId: dto.accommodationId,
-        status: Status.ACCEPTED,
-      },
-    });
-    //console.log(reservations)
-    if (reservations.length > 0) {
-      return "Reservation failed there are reservations in that time period.";
-    }
-    const aDto = {
-      accommodationId: dto.accommodationId,
-      startDate: dto.startDate,
-      endDate: dto.endDate,
-    };
-    const bool = await this.accommodationClient
-      .send<string>("checkAvailability", aDto)
-      .toPromise();
-    console.log(bool);
-
-    if (bool) {
-      dto.status = Status.PENDING;
-      const reservation = this.create(dto);
-      return reservation;
-    } else {
-      return "Reservation failed, accommodation is not avaliable at these dates.";
-    }
+    this.checkReservation(dto);
+    const reservation = this.create(dto);
+    return reservation;
   }
 
   async cancelReservationPending(reservationId: number) {
@@ -169,5 +165,35 @@ export class ReservationService {
       }
     }
     return false;
+  }
+
+  async checkReservation(dto: any) {
+    const accommodation  =  await lastValueFrom(this.accommodationClient.send<any>("findOneAccommodation", dto.accommodationId));
+    if(!accommodation) {
+      return false;
+      // throw new NotFoundException(`Accommodation with ID ${dto.accommodationId} not found`);
+    }
+    const reservations = await this.reservationRepository.find({
+      where: {
+        startDate: LessThan(dto.endDate),
+        endDate: MoreThan(dto.startDate),
+        accommodationId: dto.accommodationId,
+        status: Status.ACCEPTED,
+      },
+    });
+    if (reservations.length > 0) {
+      return false;
+    }
+    const aDto = {
+      accommodationId: dto.accommodationId,
+      startDate: dto.startDate,
+      endDate: dto.endDate,
+    };
+    const bool = await this.accommodationClient
+      .send<any>("checkAvailability", aDto).toPromise();
+
+    if (!bool) {
+      return false;
+    }
   }
 }

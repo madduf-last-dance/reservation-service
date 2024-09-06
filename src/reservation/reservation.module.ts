@@ -9,16 +9,10 @@ import { Reservation } from "./entities/reservation.entity";
   imports: [
     ClientsModule.register([
       {
-        name: "RESERVATION_SERVICE",
-        transport: Transport.TCP,
-        options: {
-          port: 1315,
-        },
-      },
-      {
         name: "ACCOMMODATION_SERVICE",
         transport: Transport.TCP,
         options: {
+          host: "accommodation-service",
           port: 1312,
         },
       },

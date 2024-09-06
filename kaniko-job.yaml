@@ -1,0 +1,30 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kaniko-job
+spec:
+  template:
+    spec:
+      containers:
+      - name: kaniko
+        image: gcr.io/kaniko-project/executor:latest
+        args:
+        - --dockerfile=/workspace/Dockerfile
+        - --context=git://github.com/madduf-last-dance/user-service.git#feature/kubernetes
+        - --destination=nedeljkovignjevic/user-service:latest
+        volumeMounts:
+          - name: kaniko-secret
+            mountPath: /kaniko/.docker
+          - name: workspace
+            mountPath: /workspace
+      restartPolicy: Never
+      volumes:
+      - name: kaniko-secret
+        secret:
+          secretName: regcred
+          items:
+            - key: .dockerconfigjson
+              path: config.json
+      - name: workspace
+        persistentVolumeClaim:
+          claimName: workspace-claim

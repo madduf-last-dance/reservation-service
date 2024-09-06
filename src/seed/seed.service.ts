@@ -17,7 +17,6 @@ export class SeedService {
     if (checkedReservations.length !== 0) {
       return;
     }
-    //console.log("reservations");
 
     const reservations: Partial<Reservation>[] = [
       {

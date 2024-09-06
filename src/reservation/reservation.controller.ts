@@ -13,9 +13,18 @@ export class ReservationController {
     return this.reservationService.create(createReservationDto);
   }
 
-  @MessagePattern("findAllReservation")
+  @MessagePattern("findAllReservations")
   findAll() {
     return this.reservationService.findAll();
+  }
+  
+  @MessagePattern("findAllByUser")
+  findAllByUser(@Payload() id: number) {
+    return this.reservationService.findAllByUser(id);
+  }
+  @MessagePattern("findAllByAccommodation")
+  findAllByAccommodation(@Payload() id: number) {
+    return this.reservationService.findAllByAccommodation(id);
   }
 
   @MessagePattern("findOneReservation")
