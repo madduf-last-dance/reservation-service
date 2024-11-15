@@ -1,0 +1,50 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - feature/kubernetes
+      - develop
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Minikube
+      uses: medyagh/setup-minikube@master
+
+    - name: Start Minikube
+      run: minikube start --driver=docker
+
+    - name: Create Kaniko secret
+      run: |
+        kubectl create secret docker-registry regcred \
+          --docker-server=https://index.docker.io/v1/ \
+          --docker-username=${{ secrets.DOCKER_USERNAME }} \
+          --docker-password=${{ secrets.DOCKER_PASSWORD }} \
+          --docker-email=${{ secrets.DOCKER_EMAIL }}
+
+    - name: Create workspace directory in Minikube
+      run: |
+        minikube ssh -- sudo mkdir -p workspace
+
+    - name: Copy Dockerfile to Minikube workspace
+      run: |
+        minikube cp Dockerfile minikube:/home/docker/workspace/ 
+
+    - name: Create Kaniko Job to build the image and to push the image to dockerhub
+      run: |
+        kubectl create -f workspace-volume.yaml
+        kubectl create -f kaniko-job.yaml
+
+    - name: Wait for Kaniko Job to be COMPLETED
+      run: |
+        kubectl wait --for=condition=Complete job/kaniko-job --timeout=5m
+
+    - name: Clean up Kaniko job
+      run: |
+        kubectl delete job kaniko-job
