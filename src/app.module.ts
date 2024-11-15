@@ -11,11 +11,23 @@ import { SeedModule } from "./seed/seed.module";
 @Module({
   imports: [
     ClientsModule.register([
-      { name: "RESERVATION_SERVICE", transport: Transport.TCP },
+      {
+        name: "USER_SERVICE",
+        transport: Transport.TCP,
+        options: {
+          host: 'user-service.default.svc.cluster.local',
+          port: 1313,
+        },
+      },
+      {
+        name: "ACCOMMODATION_SERVICE",
+        transport: Transport.TCP,
+        options: {
+          host: 'accommodation-service.default.svc.cluster.local',
+          port: 1312,
+        },
+      },
     ]),
-    ConfigModule.forRoot({
-      envFilePath: [".env.dev", ".env"],
-    }),
     ReservationModule,
     TypeOrmModule.forRoot({
       type: "postgres",
