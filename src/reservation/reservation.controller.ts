@@ -69,4 +69,8 @@ export class ReservationController {
   hasFutureReservations(@Payload() payload: { guestId: number }) {
     return this.reservationService.hasFutureReservations(payload.guestId);
   }
+  @MessagePattern("findAllGuestAndAcceptedReservations")
+  findAllGuestAndAccepted(@Payload() payload: { guestId: number, accommodationId: number }) {
+    return this.reservationService.findAllGuestAndAccepted(payload.guestId,payload.accommodationId);
+  }
 }

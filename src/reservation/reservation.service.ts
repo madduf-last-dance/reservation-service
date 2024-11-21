@@ -15,19 +15,19 @@ export class ReservationService {
     private readonly reservationRepository: Repository<Reservation>,
     @Inject("ACCOMMODATION_SERVICE")
     private readonly accommodationClient: ClientProxy,
-  ) {}
+  ) { }
 
   async create(reservationDto: ReservationDto): Promise<Reservation> {
     reservationDto.status = Status.PENDING;
     const isOk = this.checkReservation(reservationDto);
-    if(!isOk) {
+    if (!isOk) {
       return null;
     }
-    const accommodation  =  await lastValueFrom(this.accommodationClient.send<any>("findOneAccommodation", reservationDto.accommodationId));
-    if(!accommodation) {
+    const accommodation = await lastValueFrom(this.accommodationClient.send<any>("findOneAccommodation", reservationDto.accommodationId));
+    if (!accommodation) {
       return null;
     }
-    if(accommodation.isAutomatic) {
+    if (accommodation.isAutomatic) {
       reservationDto.status = Status.ACCEPTED;
     }
     const reservation = this.reservationRepository.create(reservationDto);
@@ -39,14 +39,14 @@ export class ReservationService {
   }
   async findAllByUser(id: number): Promise<Reservation[]> {
     return await this.reservationRepository.find(
-        {where: {guestId: id}}
-      );
+      { where: { guestId: id } }
+    );
   }
 
   async findAllByAccommodation(id: number): Promise<Reservation[]> {
     return await this.reservationRepository.find(
-        {where: {accommodationId: id}}
-      );
+      { where: { accommodationId: id } }
+    );
   }
   async findOne(id: number): Promise<Reservation> {
     const reservation = await this.reservationRepository.findOne({
@@ -168,8 +168,8 @@ export class ReservationService {
   }
 
   async checkReservation(dto: any) {
-    const accommodation  =  await lastValueFrom(this.accommodationClient.send<any>("findOneAccommodation", dto.accommodationId));
-    if(!accommodation) {
+    const accommodation = await lastValueFrom(this.accommodationClient.send<any>("findOneAccommodation", dto.accommodationId));
+    if (!accommodation) {
       return false;
       // throw new NotFoundException(`Accommodation with ID ${dto.accommodationId} not found`);
     }
@@ -195,5 +195,19 @@ export class ReservationService {
     if (!bool) {
       return false;
     }
+  }
+
+  async findAllGuestAndAccepted(guestId: number, accommodationId: number) {
+    const accommodation = await lastValueFrom(this.accommodationClient.send<any>("findOneAccommodation", accommodationId));
+    if (!accommodation) {
+      return null;
+    }
+    const guestPendingReservations = await this.reservationRepository.find(
+      { where: { guestId: guestId, accommodationId: accommodationId, status: Status.PENDING } }
+    );
+    const acceptedReservations = await this.reservationRepository.find(
+      { where: { accommodationId: accommodationId, status: Status.ACCEPTED } }
+    );
+    return [...acceptedReservations, ...guestPendingReservations];
   }
 }
