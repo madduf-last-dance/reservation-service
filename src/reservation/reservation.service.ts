@@ -210,4 +210,17 @@ export class ReservationService {
     );
     return [...acceptedReservations, ...guestPendingReservations];
   }
+
+  async acceptReservation(reservationId: number) {
+    const reservation = await this.reservationRepository.findOne({
+      where: {
+        id: reservationId,
+        status: Status.PENDING,
+      },
+    });
+    if (reservation) {
+      reservation.status = Status.ACCEPTED;
+      return await this.reservationRepository.save(reservation);
+    }
+  }
 }

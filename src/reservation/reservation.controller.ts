@@ -73,4 +73,11 @@ export class ReservationController {
   findAllGuestAndAccepted(@Payload() payload: { guestId: number, accommodationId: number }) {
     return this.reservationService.findAllGuestAndAccepted(payload.guestId,payload.accommodationId);
   }
+
+  @MessagePattern("acceptReservation")
+  acceptReservation(@Payload() payload: { reservationId: number }) {
+    return this.reservationService.acceptReservation(
+      payload.reservationId,
+    );
+  }
 }
