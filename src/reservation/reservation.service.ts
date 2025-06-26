@@ -19,7 +19,7 @@ export class ReservationService {
 
   async create(reservationDto: ReservationDto): Promise<Reservation> {
     reservationDto.status = Status.PENDING;
-    const isOk = this.checkReservation(reservationDto);
+    const isOk = await this.checkReservation(reservationDto);
     if (!isOk) {
       return null;
     }
@@ -171,7 +171,6 @@ export class ReservationService {
     const accommodation = await lastValueFrom(this.accommodationClient.send<any>("findOneAccommodation", dto.accommodationId));
     if (!accommodation) {
       return false;
-      // throw new NotFoundException(`Accommodation with ID ${dto.accommodationId} not found`);
     }
     const reservations = await this.reservationRepository.find({
       where: {
@@ -189,12 +188,11 @@ export class ReservationService {
       startDate: dto.startDate,
       endDate: dto.endDate,
     };
-    const bool = await this.accommodationClient
+    const hasAvailability = await this.accommodationClient
       .send<any>("checkAvailability", aDto).toPromise();
+    console.log(hasAvailability + " _ hasAvailability");
 
-    if (!bool) {
-      return false;
-    }
+    return hasAvailability;
   }
 
   async findAllGuestAndAccepted(guestId: number, accommodationId: number) {
