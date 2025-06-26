@@ -221,4 +221,31 @@ export class ReservationService {
       return await this.reservationRepository.save(reservation);
     }
   }
+
+  async findAllGuestAndAccepted(guestId: number, accommodationId: number) {
+    const accommodation = await lastValueFrom(this.accommodationClient.send<any>("findOneAccommodation", accommodationId));
+    if (!accommodation) {
+      return null;
+    }
+    const guestPendingReservations = await this.reservationRepository.find(
+      { where: { guestId: guestId, accommodationId: accommodationId, status: Status.PENDING } }
+    );
+    const acceptedReservations = await this.reservationRepository.find(
+      { where: { accommodationId: accommodationId, status: Status.ACCEPTED } }
+    );
+    return [...acceptedReservations, ...guestPendingReservations];
+  }
+
+  async acceptReservation(reservationId: number) {
+    const reservation = await this.reservationRepository.findOne({
+      where: {
+        id: reservationId,
+        status: Status.PENDING,
+      },
+    });
+    if (reservation) {
+      reservation.status = Status.ACCEPTED;
+      return await this.reservationRepository.save(reservation);
+    }
+  }
 }
