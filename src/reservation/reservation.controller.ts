@@ -80,4 +80,19 @@ export class ReservationController {
       payload.reservationId,
     );
   }
+
+  @MessagePattern("canRateAccommodation")
+  async canRateAccommodation(
+    @Payload() payload: { guestId: number; accommodationId: number },
+  ) {
+    return this.reservationService.canRateAccommodation(payload);
+  }
+
+  @MessagePattern("canRateHost")
+  async canRateHost(
+    @Payload() payload: { guestId: number; hostId: number },
+  ) {
+    return this.reservationService.canRateHost(payload);
+  }
+
 }

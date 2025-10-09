@@ -12,7 +12,7 @@ import { Reservation } from "./entities/reservation.entity";
         name: "ACCOMMODATION_SERVICE",
         transport: Transport.TCP,
         options: {
-          host: "accommodation-service.default.svc.cluster.local",
+          host: "localhost",
           port: 1312,
         },
       },

@@ -4,9 +4,10 @@ import { UpdateReservationDto } from "./dto/update-reservation.dto";
 import { Reservation } from "./entities/reservation.entity";
 import { Between, LessThan, MoreThan, Repository } from "typeorm";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Status } from "./entities/status.enum";
 import { ClientProxy } from "@nestjs/microservices";
 import { lastValueFrom } from "rxjs";
+import { MessagePattern, Payload } from "@nestjs/microservices";
+import { Status } from "./entities/status.enum";
 
 @Injectable()
 export class ReservationService {
@@ -222,30 +223,47 @@ export class ReservationService {
     }
   }
 
-  async findAllGuestAndAccepted(guestId: number, accommodationId: number) {
-    const accommodation = await lastValueFrom(this.accommodationClient.send<any>("findOneAccommodation", accommodationId));
-    if (!accommodation) {
-      return null;
-    }
-    const guestPendingReservations = await this.reservationRepository.find(
-      { where: { guestId: guestId, accommodationId: accommodationId, status: Status.PENDING } }
-    );
-    const acceptedReservations = await this.reservationRepository.find(
-      { where: { accommodationId: accommodationId, status: Status.ACCEPTED } }
-    );
-    return [...acceptedReservations, ...guestPendingReservations];
-  }
+  async canRateAccommodation(@Payload() data: { guestId: number; accommodationId: number }): Promise<boolean> {
+    const { guestId, accommodationId } = data;
 
-  async acceptReservation(reservationId: number) {
-    const reservation = await this.reservationRepository.findOne({
+    // Guest must have at least 1 past ACCEPTED reservation for that accommodation
+    const reservations = await this.reservationRepository.find({
       where: {
-        id: reservationId,
-        status: Status.PENDING,
+        guestId,
+        accommodationId,
+        status: Status.ACCEPTED,
+        endDate: LessThan(new Date()),  // already finished
       },
     });
-    if (reservation) {
-      reservation.status = Status.ACCEPTED;
-      return await this.reservationRepository.save(reservation);
+
+    return reservations.length > 0;
+  }
+
+  async canRateHost(@Payload() data: { guestId: number; hostId: number }): Promise<boolean> {
+    const { guestId, hostId } = data;
+
+    // Find all accommodations owned by this host
+    const accommodations = await this.accommodationClient
+      .send<any[]>("findAllAccommodationsHost", hostId)
+      .toPromise();
+
+    if (!accommodations || accommodations.length === 0) return false;
+
+    // Check if guest has at least 1 past ACCEPTED reservation in any of them
+    for (const acc of accommodations) {
+      const reservations = await this.reservationRepository.find({
+        where: {
+          guestId,
+          accommodationId: acc.id,
+          status: Status.ACCEPTED,
+          endDate: LessThan(new Date()),  // stay must be completed
+        },
+      });
+      if (reservations.length > 0) {
+        return true;
+      }
     }
+
+    return false;
   }
 }
