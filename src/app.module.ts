@@ -10,6 +10,11 @@ import { SeedModule } from "./seed/seed.module";
 
 @Module({
   imports: [
+    ConfigModule.forRoot(
+      {
+        envFilePath: ['.env']
+      }
+    ),
     ClientsModule.register([
     ]),
     ReservationModule,
