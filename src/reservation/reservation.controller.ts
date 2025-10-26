@@ -17,7 +17,7 @@ export class ReservationController {
   findAll() {
     return this.reservationService.findAll();
   }
-  
+
   @MessagePattern("findAllByUser")
   findAllByUser(@Payload() id: number) {
     return this.reservationService.findAllByUser(id);
@@ -52,7 +52,6 @@ export class ReservationController {
 
   @MessagePattern("cancelReservationPending")
   cancelReservationPending(@Payload() payload: { reservationId: number }) {
-    console.log("Number:", payload.reservationId); // console.log("Number:", reservationId) Print is: 'Number: { reservationId: 12 }'
     return this.reservationService.cancelReservationPending(
       payload.reservationId,
     );
@@ -70,15 +69,18 @@ export class ReservationController {
     return this.reservationService.hasFutureReservations(payload.guestId);
   }
   @MessagePattern("findAllGuestAndAcceptedReservations")
-  findAllGuestAndAccepted(@Payload() payload: { guestId: number, accommodationId: number }) {
-    return this.reservationService.findAllGuestAndAccepted(payload.guestId,payload.accommodationId);
+  findAllGuestAndAccepted(
+    @Payload() payload: { guestId: number; accommodationId: number },
+  ) {
+    return this.reservationService.findAllGuestAndAccepted(
+      payload.guestId,
+      payload.accommodationId,
+    );
   }
 
   @MessagePattern("acceptReservation")
   acceptReservation(@Payload() payload: { reservationId: number }) {
-    return this.reservationService.acceptReservation(
-      payload.reservationId,
-    );
+    return this.reservationService.acceptReservation(payload.reservationId);
   }
 
   @MessagePattern("canRateAccommodation")
@@ -89,10 +91,7 @@ export class ReservationController {
   }
 
   @MessagePattern("canRateHost")
-  async canRateHost(
-    @Payload() payload: { guestId: number; hostId: number },
-  ) {
+  async canRateHost(@Payload() payload: { guestId: number; hostId: number }) {
     return this.reservationService.canRateHost(payload);
   }
-
 }
