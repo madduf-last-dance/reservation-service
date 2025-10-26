@@ -210,17 +210,48 @@ export class ReservationService {
     return [...acceptedReservations, ...guestPendingReservations];
   }
 
-  async acceptReservation(reservationId: number) {
-    const reservation = await this.reservationRepository.findOne({
-      where: {
-        id: reservationId,
-        status: Status.PENDING,
-      },
-    });
-    if (reservation) {
-      reservation.status = Status.ACCEPTED;
-      return await this.reservationRepository.save(reservation);
-    }
+ async acceptReservation(reservationId: number): Promise<Reservation | null> {
+    return await this.reservationRepository.manager.transaction(
+      async (manager) => {
+        console.log(reservationId)
+        // 1) Lock the reservation row to prevent races (pessimistic write)
+         const reservation = await manager.findOne(Reservation, {
+          where: { id: reservationId, status: Status.PENDING },
+        });
+        console.log(reservation)
+        if (!reservation) {
+          // Not found or not pending
+          return null;
+        }
+
+        // 2) Accept the selected reservation
+        reservation.status = Status.ACCEPTED;
+        await manager.save(Reservation, reservation);
+
+        // 3) Decline all other pending reservations for same accommodation that overlap
+        // Overlap condition (inclusive): NOT (other.endDate < res.startDate OR other.startDate > res.endDate)
+        await manager
+          .createQueryBuilder()
+          .update(Reservation)
+          .set({ status: Status.DECLINED })
+          .where("accommodationId = :accId", {
+            accId: reservation.accommodationId,
+          })
+          .andWhere("status = :pending", { pending: Status.PENDING })
+          .andWhere("id != :id", { id: reservation.id })
+          .andWhere(
+            "NOT (endDate < :startDate OR startDate > :endDate)",
+            {
+              startDate: reservation.startDate,
+              endDate: reservation.endDate,
+            }
+          )
+          .execute();
+
+        // 4) return the accepted reservation
+        return reservation;
+      }
+    );
   }
 
   async canRateAccommodation(@Payload() data: { guestId: number; accommodationId: number }): Promise<boolean> {
