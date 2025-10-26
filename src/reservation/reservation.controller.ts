@@ -64,10 +64,18 @@ export class ReservationController {
       payload.reservationId,
     );
   }
-  @MessagePattern("hasFutureReservations")
-  hasFutureReservations(@Payload() payload: { guestId: number }) {
-    return this.reservationService.hasFutureReservations(payload.guestId);
+
+  // Checks for account deletion
+  @MessagePattern("hasFutureReservationsGuest")
+  hasFutureReservationsGuest(@Payload() payload: { guestId: number }) {
+    return this.reservationService.hasFutureReservationsGuest(payload.guestId);
   }
+  @MessagePattern("hasFutureReservationsHost")
+  hasFutureReservationsHost(@Payload() payload: { hostId: number }) {
+    return this.reservationService.hasFutureReservationsHost(payload.hostId);
+  }
+  // ==========================================
+
   @MessagePattern("findAllGuestAndAcceptedReservations")
   findAllGuestAndAccepted(
     @Payload() payload: { guestId: number; accommodationId: number },

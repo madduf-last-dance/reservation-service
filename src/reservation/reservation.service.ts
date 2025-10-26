@@ -13,6 +13,7 @@ import { ClientProxy } from "@nestjs/microservices";
 import { lastValueFrom } from "rxjs";
 import { MessagePattern, Payload } from "@nestjs/microservices";
 import { Status } from "./entities/status.enum";
+import { MoreThanOrEqual, In } from 'typeorm';
 
 @Injectable()
 export class ReservationService {
@@ -135,55 +136,53 @@ export class ReservationService {
       this.update(reservation.id, reservation);
     }
 
-    // Accepted reservations in that timeframe
-    // const reservations = await this.reservationRepository.find({
-    //   where: {
-    //     accommodationId: rDto.accommodationId,
-    //     startDate: Between(startDate, endDate),
-    //     endDate: Between(startDate, endDate),
-    //     status: Status.ACCEPTED,
-    //   },
-    // });
-    // console.log("Input DTO:", rDto);
-    // console.log("Converted Dates:", startDate, endDate);
-    // console.log("Retrieved Reservations:", reservations);
-
-    // if (reservations.length > 0){ // There are reservations in that time period
-    //   return "Cannot reserve, date is taken.";
-    // }
     rDto.status = Status.PENDING;
     this.create(rDto);
     return "Successfully created reservation.";
   }
-  async hasFutureReservations(guestId: number) {
+
+  // Guest: cannot delete if they have accepted or pending reservations that are ongoing or in the future
+  async hasFutureReservationsGuest(guestId: number) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     const reservations = await this.reservationRepository.find({
       where: {
-        guestId: guestId,
-        status: Status.ACCEPTED,
-        startDate: MoreThan(new Date()),
+        guestId,
+        status: In([Status.ACCEPTED, Status.PENDING]),
+        endDate: MoreThanOrEqual(today), // check if reservation ends today or later
       },
     });
+    console.log("N of reservations for Guest %s", reservations.length)
     return reservations.length > 0;
   }
 
+  // Host: cannot delete if any of their accommodations have accepted or pending reservations that are ongoing or in the future
   async hasFutureReservationsHost(hostId: number) {
     const accommodations = await lastValueFrom(
-      this.accommodationClient.send<any>("findAllAccommodationsHost", hostId),
+      this.accommodationClient.send<any>('findAllAccommodationsHost', hostId),
     );
-    for (const accommodation of accommodations) {
-      const reservations = await this.reservationRepository.find({
-        where: {
-          accommodationId: accommodation.id,
-          status: Status.ACCEPTED,
-          startDate: MoreThan(new Date()),
-        },
-      });
-      if (reservations.length > 0) {
-        return true;
-      }
+
+    if (!accommodations || accommodations.length === 0) {
+      return false;
     }
-    return false;
+
+    const accIds = accommodations.map((a) => a.id);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const reservations = await this.reservationRepository.find({
+      where: {
+        accommodationId: In(accIds),
+        status: In([Status.ACCEPTED, Status.PENDING]),
+        endDate: MoreThanOrEqual(today), // check if reservation ends today or later
+      },
+    });
+    console.log("N of reservations for Host's accommodations %s", reservations.length)
+    return reservations.length > 0;
   }
+
 
   async checkReservation(dto: any) {
     const accommodation = await lastValueFrom(
