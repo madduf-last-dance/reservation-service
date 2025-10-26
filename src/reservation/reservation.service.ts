@@ -1,4 +1,9 @@
-import { BadRequestException, Inject, Injectable, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import { ReservationDto } from "./dto/reservation.dto";
 import { UpdateReservationDto } from "./dto/update-reservation.dto";
 import { Reservation } from "./entities/reservation.entity";
@@ -16,7 +21,7 @@ export class ReservationService {
     private readonly reservationRepository: Repository<Reservation>,
     @Inject("ACCOMMODATION_SERVICE")
     private readonly accommodationClient: ClientProxy,
-  ) { }
+  ) {}
 
   async create(reservationDto: ReservationDto): Promise<Reservation> {
     reservationDto.status = Status.PENDING;
@@ -24,7 +29,12 @@ export class ReservationService {
     if (!isOk) {
       return null;
     }
-    const accommodation = await lastValueFrom(this.accommodationClient.send<any>("findOneAccommodation", reservationDto.accommodationId));
+    const accommodation = await lastValueFrom(
+      this.accommodationClient.send<any>(
+        "findOneAccommodation",
+        reservationDto.accommodationId,
+      ),
+    );
     if (!accommodation) {
       return null;
     }
@@ -39,15 +49,13 @@ export class ReservationService {
     return await this.reservationRepository.find();
   }
   async findAllByUser(id: number): Promise<Reservation[]> {
-    return await this.reservationRepository.find(
-      { where: { guestId: id } }
-    );
+    return await this.reservationRepository.find({ where: { guestId: id } });
   }
 
   async findAllByAccommodation(id: number): Promise<Reservation[]> {
-    return await this.reservationRepository.find(
-      { where: { accommodationId: id } }
-    );
+    return await this.reservationRepository.find({
+      where: { accommodationId: id },
+    });
   }
   async findOne(id: number): Promise<Reservation> {
     const reservation = await this.reservationRepository.findOne({
@@ -100,8 +108,17 @@ export class ReservationService {
       },
     });
     if (reservation) {
-      this.remove(reservation.id);
+        const now = new Date();
+        const diffInMs = Math.abs(reservation.startDate.getTime() - now.getTime());
+        const oneDayInMs = 24 * 60 * 60 * 1000; // milliseconds in one day
+        if(diffInMs > oneDayInMs) {
+          this.remove(reservation.id);
+          return "Successfully canceled reservation.";
+
+        }
+        return "Cannot remove reservation within one day.";
     }
+    return "Reservation with " + reservationId + " doesn't exist.";
   }
 
   async confirmReservation(rDto: ReservationDto) {
@@ -169,7 +186,12 @@ export class ReservationService {
   }
 
   async checkReservation(dto: any) {
-    const accommodation = await lastValueFrom(this.accommodationClient.send<any>("findOneAccommodation", dto.accommodationId));
+    const accommodation = await lastValueFrom(
+      this.accommodationClient.send<any>(
+        "findOneAccommodation",
+        dto.accommodationId,
+      ),
+    );
     if (!accommodation) {
       return false;
     }
@@ -190,23 +212,33 @@ export class ReservationService {
       endDate: dto.endDate,
     };
     const hasAvailability = await this.accommodationClient
-      .send<any>("checkAvailability", aDto).toPromise();
+      .send<any>("checkAvailability", aDto)
+      .toPromise();
     console.log(hasAvailability + " _ hasAvailability");
 
     return hasAvailability;
   }
 
   async findAllGuestAndAccepted(guestId: number, accommodationId: number) {
-    const accommodation = await lastValueFrom(this.accommodationClient.send<any>("findOneAccommodation", accommodationId));
+    const accommodation = await lastValueFrom(
+      this.accommodationClient.send<any>(
+        "findOneAccommodation",
+        accommodationId,
+      ),
+    );
     if (!accommodation) {
       return null;
     }
-    const guestPendingReservations = await this.reservationRepository.find(
-      { where: { guestId: guestId, accommodationId: accommodationId, status: Status.PENDING } }
-    );
-    const acceptedReservations = await this.reservationRepository.find(
-      { where: { accommodationId: accommodationId, status: Status.ACCEPTED } }
-    );
+    const guestPendingReservations = await this.reservationRepository.find({
+      where: {
+        guestId: guestId,
+        accommodationId: accommodationId,
+        status: Status.PENDING,
+      },
+    });
+    const acceptedReservations = await this.reservationRepository.find({
+      where: { accommodationId: accommodationId, status: Status.ACCEPTED },
+    });
     return [...acceptedReservations, ...guestPendingReservations];
   }
 
@@ -254,7 +286,9 @@ export class ReservationService {
     );
   }
 
-  async canRateAccommodation(@Payload() data: { guestId: number; accommodationId: number }): Promise<boolean> {
+  async canRateAccommodation(
+    @Payload() data: { guestId: number; accommodationId: number },
+  ): Promise<boolean> {
     const { guestId, accommodationId } = data;
 
     // Guest must have at least 1 past ACCEPTED reservation for that accommodation
@@ -263,14 +297,16 @@ export class ReservationService {
         guestId,
         accommodationId,
         status: Status.ACCEPTED,
-        endDate: LessThan(new Date()),  // already finished
+        endDate: LessThan(new Date()), // already finished
       },
     });
 
     return reservations.length > 0;
   }
 
-  async canRateHost(@Payload() data: { guestId: number; hostId: number }): Promise<boolean> {
+  async canRateHost(
+    @Payload() data: { guestId: number; hostId: number },
+  ): Promise<boolean> {
     const { guestId, hostId } = data;
 
     // Find all accommodations owned by this host
@@ -287,7 +323,7 @@ export class ReservationService {
           guestId,
           accommodationId: acc.id,
           status: Status.ACCEPTED,
-          endDate: LessThan(new Date()),  // stay must be completed
+          endDate: LessThan(new Date()), // stay must be completed
         },
       });
       if (reservations.length > 0) {
